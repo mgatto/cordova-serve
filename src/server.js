@@ -21,6 +21,7 @@
 
 const chalk = require('chalk');
 const express = require('express');
+const fs = require('fs');
 
 /**
  * @desc Launches a server with the specified options and optional custom handlers.
@@ -44,7 +45,16 @@ module.exports = function (opts) {
         };
 
         const app = that.app;
-        const server = require('http').Server(app);
+
+        if (opts.https) {
+            const server = require("https").createServer({
+                key: fs.readFileSync(__dirname + '/private.key', 'utf8'),
+                cert: fs.readFileSync(__dirname + '/public.cert', 'utf8')
+            }, app);
+        } else {
+            const server = require("https").Server(app);
+        }
+
         that.server = server;
 
         if (opts.router) {
@@ -66,7 +76,8 @@ module.exports = function (opts) {
         const listener = server.listen(port);
         listener.on('listening', () => {
             that.port = port;
-            const message = `Static file server running on: ${chalk.green(`http://localhost:${port}`)} (CTRL + C to shut down)`;
+
+            const message = `Static file server running on: ${chalk.green(`${opts.https ? 'https': 'http'}://localhost:${port}`)} (CTRL + C to shut down)`;
             if (!opts.noServerInfo) {
                 log(message);
             }
